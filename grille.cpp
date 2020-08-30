@@ -289,7 +289,7 @@ std::queue<coord> *Grille::remplissage_file(struct cc *c, enum direction dir) {
 
 struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum direction direction) {
 
-    std::cout << "here we are\n";
+    //std::cout << "here we are\n";
 
     struct retMoveBlock ret;
 
@@ -432,12 +432,12 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
         ret.deplacements->insert(std::pair<coord, coord>(cell_orig, cell));
     }
 
-    std::cout << "ok swap\n";
+    //std::cout << "ok swap\n";
 
     //on fait l'union des deux cc
     struct cc *new_c = grid_copy->doUnion(c, grid_copy->getCc(current_cell.first, current_cell.second));
 
-    std::cout << "ok dounion\n";
+    //std::cout << "ok dounion\n";
 
     int new_size = new_c->size;
 

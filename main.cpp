@@ -7,12 +7,16 @@
 #define WIDTH_BLOCKS    6
 #define HEIGHT_BLOCKS   8
 
-#define OFFSET_SCORE    100
+#define OFFSET_SCORE    150
 
 #define SIZE_BLOCK  50
 #define W_WIDTH     ((WIDTH_BLOCKS) * (SIZE_BLOCK))         //20 * 6
 #define W_HEIGHT    ((HEIGHT_BLOCKS) * (SIZE_BLOCK) + (OFFSET_SCORE))         //20 * 8
 
+Rectangle hintRectangle = {10, OFFSET_SCORE - SIZE_BLOCK - 10, 2*SIZE_BLOCK, SIZE_BLOCK};
+Rectangle undoRectangle = {W_WIDTH - 2*SIZE_BLOCK - 15, OFFSET_SCORE - SIZE_BLOCK - 10, 2.1*SIZE_BLOCK, SIZE_BLOCK};
+
+std::stack<Grille*> history;
 
 Color getCouleur(enum couleur couleur) {
     if(couleur < 0 || couleur > NUMBER_COLOR) return RAYWHITE;
@@ -79,7 +83,9 @@ int main() {
     bool isCellSelected = false;
     coord selectedCell(0,0);
     Vector2 mousePosition;
-
+    coord hint(0,0);
+    struct retCheckGO retGO;
+    bool shouldDisplayHint = false;
 
     while(!WindowShouldClose()) {
 
@@ -105,6 +111,18 @@ int main() {
                     selectedCell = new_selectedCell;
                     isCellSelected = true;
                 }
+            }
+
+            else if(CheckCollisionPointRec(mousePosition, undoRectangle)) {
+                if(!history.empty()) {
+                    //delete grille;
+                    grille = history.top();
+                    history.pop();
+                }
+            }
+
+            else if(CheckCollisionPointRec(mousePosition, hintRectangle)) {
+                shouldDisplayHint = true;
             }
         }
 
@@ -134,10 +152,23 @@ int main() {
             ret = grille->moveBlock(selectedCell.first, selectedCell.second, dir);
 
             if(ret.rettype == retMoveBlock::RET_OK) {
-                *grille = *(ret.new_grille);
+                history.push(grille);
+                grille = new Grille(*(ret.new_grille));
             }
 
             isCellSelected = false;
+            shouldDisplayHint = false;
+
+            //test nouvelles possibilitées
+            retGO = checkIfGameOver(grille);
+            if(retGO.retcode == retCheckGO::RET_OK) {
+                hint = retGO.hint;
+            } else {
+                //Game over...
+                //TODO : faire un truc mieux
+                std::cout << "Game over\n";
+                exit(0);
+            }
         }
 
 
@@ -148,6 +179,11 @@ int main() {
         ss << "x: " << mousePosition.x << " y: " << mousePosition.y;
 
         std::string mouse_text(ss.str()); */
+
+        //Si une case est sélectionnée, on l'affiche
+        Rectangle rec_around_cell = {(float)selectedCell.first * SIZE_BLOCK, (float)selectedCell.second * SIZE_BLOCK + OFFSET_SCORE, SIZE_BLOCK, SIZE_BLOCK};
+
+        Rectangle rec_around_hint = {(float)hint.first * SIZE_BLOCK, (float)hint.second * SIZE_BLOCK + OFFSET_SCORE, SIZE_BLOCK, SIZE_BLOCK};
 
         BeginDrawing();
 
@@ -160,14 +196,21 @@ int main() {
             }
         }
 
-        //Si une case est sélectionnée, on l'affiche
-        Rectangle rec_around_cell = {(float)selectedCell.first * SIZE_BLOCK, (float)selectedCell.second * SIZE_BLOCK + OFFSET_SCORE, SIZE_BLOCK, SIZE_BLOCK};
+        if(shouldDisplayHint) {
+            DrawRectangleLinesEx(rec_around_hint, 5, GRAY);
+        }
 
         if(isCellSelected) {
             DrawRectangleLinesEx(rec_around_cell, 5, BLACK);
         }
 
-        DrawText("Score : ", 30, 30, 30, BLACK);
+        DrawText("Score : ", 30, 20, 30, BLACK);
+        //Draw Hint Button
+        DrawRectangleRoundedLines(hintRectangle, 0.3, 4, 5, BLACK);
+        DrawText("Hint", 20, OFFSET_SCORE - SIZE_BLOCK - 5, 40, BLACK);
+
+        DrawRectangleRoundedLines(undoRectangle, 0.3, 4, 5, BLACK);
+        DrawText("Undo", W_WIDTH - 2*SIZE_BLOCK - 10, OFFSET_SCORE - SIZE_BLOCK - 5, 40, BLACK);
 
         EndDrawing();
 
