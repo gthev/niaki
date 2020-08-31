@@ -559,3 +559,33 @@ void printGrid(Grille &grille) {
         std::cout << std::endl;
     }
 }
+
+unsigned short Grille::get_score() {
+    unsigned short score_max = m_height * m_width;
+
+    std::vector<unsigned short> comptes(NUMBER_COLOR);
+    std::vector<unsigned short> nr_cc(NUMBER_COLOR);
+
+    //std::cerr << "getscore...\n";
+
+    for(int i=0; i<NUMBER_COLOR; i++) {
+        comptes[i] = 0;
+        nr_cc[i] = 0;
+    }
+
+    for(auto &cc: m_list_cc) {
+        int couleur = cc->couleur;
+        comptes[couleur] += cc->size;
+        nr_cc[couleur]++;
+    }
+
+    unsigned short score = 0;
+
+    for(int i=0; i<NUMBER_COLOR; i++) {
+        //std::cerr << "color " << i << ": ";
+        //std::cerr << comptes[i] - nr_cc[i] << "\n";
+        score += comptes[i] - nr_cc[i];
+    }
+
+    return (unsigned short)(((float)(score)/((float)score_max))*100.f);
+}

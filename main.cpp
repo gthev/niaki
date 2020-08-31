@@ -86,6 +86,7 @@ int main() {
     coord hint(0,0);
     struct retCheckGO retGO;
     bool shouldDisplayHint = false;
+    unsigned int score = grille->get_score();
 
     while(!WindowShouldClose()) {
 
@@ -159,6 +160,8 @@ int main() {
             isCellSelected = false;
             shouldDisplayHint = false;
 
+            score = grille->get_score();
+
             //test nouvelles possibilitées
             retGO = checkIfGameOver(grille);
             if(retGO.retcode == retCheckGO::RET_OK) {
@@ -166,7 +169,11 @@ int main() {
             } else {
                 //Game over...
                 //TODO : faire un truc mieux
-                std::cout << "Game over\n";
+                if(score >= 100) {
+                    std::cout << "Victoire !\n";
+                } else {
+                    std::cout << "Game over, score = " << score << std::endl;
+                }
                 exit(0);
             }
         }
@@ -174,11 +181,11 @@ int main() {
 
         //après moveBlock : isCellSelected = false
 
-        /* std::ostringstream ss;
+        std::ostringstream sscore;
 
-        ss << "x: " << mousePosition.x << " y: " << mousePosition.y;
+        sscore << score << "%";
 
-        std::string mouse_text(ss.str()); */
+        std::string score_text(sscore.str());
 
         //Si une case est sélectionnée, on l'affiche
         Rectangle rec_around_cell = {(float)selectedCell.first * SIZE_BLOCK, (float)selectedCell.second * SIZE_BLOCK + OFFSET_SCORE, SIZE_BLOCK, SIZE_BLOCK};
@@ -205,6 +212,7 @@ int main() {
         }
 
         DrawText("Score : ", 30, 20, 30, BLACK);
+        DrawText(score_text.data(), 150, 20, 30, BLACK);
         //Draw Hint Button
         DrawRectangleRoundedLines(hintRectangle, 0.3, 4, 5, BLACK);
         DrawText("Hint", 20, OFFSET_SCORE - SIZE_BLOCK - 5, 40, BLACK);

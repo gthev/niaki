@@ -95,6 +95,8 @@ public:
         -> devrait être libéré après
     */
     struct retMoveBlock moveBlock(unsigned short x, unsigned short y, enum direction direction); //gros wrapper pour bouger un bloc.
+
+    unsigned short get_score();
     ~Grille();
 };
 
