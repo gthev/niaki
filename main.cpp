@@ -1,98 +1,47 @@
-#include "drive_grille.hpp"
-#include "raylib.h"
+#include "animation.hpp"
 
 #include "math.h"
 #include <sstream>
 
-#define WIDTH_BLOCKS    6
-#define HEIGHT_BLOCKS   8
-
-#define OFFSET_SCORE    150
-
-#define SIZE_BLOCK  50
-#define W_WIDTH     ((WIDTH_BLOCKS) * (SIZE_BLOCK))         //20 * 6
-#define W_HEIGHT    ((HEIGHT_BLOCKS) * (SIZE_BLOCK) + (OFFSET_SCORE))         //20 * 8
-
 Rectangle hintRectangle = {10, OFFSET_SCORE - SIZE_BLOCK - 10, 2*SIZE_BLOCK, SIZE_BLOCK};
 Rectangle undoRectangle = {W_WIDTH - 2*SIZE_BLOCK - 15, OFFSET_SCORE - SIZE_BLOCK - 10, 2.1*SIZE_BLOCK, SIZE_BLOCK};
+Rectangle restartRectangle = {W_WIDTH / 2 - 80, OFFSET_SCORE / 2 - 30, 2.9*SIZE_BLOCK, 0.7*SIZE_BLOCK};
 
-std::stack<Grille*> history;
+bool play_game() {
 
-Color getCouleur(enum couleur couleur) {
-    if(couleur < 0 || couleur > NUMBER_COLOR) return RAYWHITE;
-
-    switch (couleur)
-    {
-    case COLOR_RED:
-        return RED;
-        break;
-    case COLOR_YELLOW:
-        return YELLOW;
-        
-    case COLOR_ORANGE:
-        return ORANGE;
-
-    case COLOR_PINK:
-        return PURPLE;
-
-    case COLOR_GREEN:
-        return GREEN;
-
-    case COLOR_BLUE:
-        return BLUE;
-    
-    default:
-        break;
-    }
-}
-
-int main() {
-    srand(time(NULL));
-
-    Grille *grille = gen_new_grille(DEFAULT_WIDTH_GRID, DEFAULT_HEIGHT_GRID);
-
+    coord hint(0,0);
+    struct retCheckGO retGO;
+    retGO.retcode = retCheckGO::RET_STUCK;
+    Grille *grille;
+    do {
+        grille = gen_new_grille(DEFAULT_WIDTH_GRID, DEFAULT_HEIGHT_GRID);
+        retGO = checkIfGameOver(grille);
+        hint = retGO.hint;
+    } while(retGO.retcode == retCheckGO::RET_STUCK);
     //printGrid(*grille);
 
+    std::cout << "new game\n";
+
     unsigned short x, y, direction;
-    struct retMoveBlock ret;
-
-    /* while(1) {
-
-        std::cout << "x: ";
-        std::cin >> x;
-        std::cout << "y: ";
-        std::cin >> y;
-        std::cout << "dir (0: up, 1: left, 2: down, 3: right): ";
-        std::cin >> direction;
-
-        ret = grille->moveBlock(x, y, (enum direction)direction);
-
-        std::cout << "retour : " << ret.rettype << std::endl;
-
-        if(ret.rettype == retMoveBlock::RET_OK) {
-            printGrid(*ret.new_grille);
-            *grille = *ret.new_grille;
-        }
-
-    } */
-
-     InitWindow(W_WIDTH, W_HEIGHT, "Niaki");
-
-    SetTargetFPS(60);
 
     bool isCellSelected = false;
     coord selectedCell(0,0);
     Vector2 mousePosition;
-    coord hint(0,0);
-    struct retCheckGO retGO;
+    
+    
     bool shouldDisplayHint = false;
     unsigned int score = grille->get_score();
+    bool GameOver = false;
+    bool restart = false;
+    bool isMoving = false;
+    AnimationManager *animation;
+    struct retMoveBlock ret;
 
-    while(!WindowShouldClose()) {
+    while(!WindowShouldClose() && !restart) {
 
         //GetMousePosition donne bien la position par rapport à la fenêtre !
 
-        if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if(!isMoving && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             mousePosition = GetMousePosition();
             coord new_selectedCell;
             float x_mouse = mousePosition.x, y_mouse = mousePosition.y;
@@ -115,15 +64,24 @@ int main() {
             }
 
             else if(CheckCollisionPointRec(mousePosition, undoRectangle)) {
-                if(!history.empty()) {
+                if(!isHistoryEmpty()) {
                     //delete grille;
-                    grille = history.top();
-                    history.pop();
+                    grille = depile_grille();
                 }
             }
 
             else if(CheckCollisionPointRec(mousePosition, hintRectangle)) {
                 shouldDisplayHint = true;
+            }
+
+            else if(CheckCollisionPointRec(mousePosition, restartRectangle)) {
+                //TODO : clean ?
+                /* std::cout << "mouse button pressed\n";
+                while(IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                    std::cout << IsMouseButtonDown(MOUSE_LEFT_BUTTON) << IsMouseButtonPressed(MOUSE_LEFT_BUTTON) << IsMouseButtonUp(MOUSE_LEFT_BUTTON) << IsMouseButtonReleased(MOUSE_LEFT_BUTTON) << std::endl;
+                }
+                std::cout << "returning restart\n"; */
+                restart = true;
             }
         }
 
@@ -147,37 +105,50 @@ int main() {
             mustMove = true;
         }
 
-        if(isCellSelected && mustMove) {
-            struct retMoveBlock ret;
+        if(!isMoving && !GameOver && isCellSelected && mustMove && grille->is_in_grid(selectedCell)) {
 
             ret = grille->moveBlock(selectedCell.first, selectedCell.second, dir);
 
             if(ret.rettype == retMoveBlock::RET_OK) {
-                history.push(grille);
-                grille = new Grille(*(ret.new_grille));
+                empile_grille(grille);
+                animation = new AnimationManager(ret.deplacements, 0.3, {0, OFFSET_SCORE, W_WIDTH - OFFSET_SCORE, W_HEIGHT}, SIZE_BLOCK, grille);
+                
+                delete ret.deplacements;
+                isMoving = true;
+                //grille = new Grille(*(ret.new_grille));
             }
 
             isCellSelected = false;
             shouldDisplayHint = false;
 
-            score = grille->get_score();
-
-            //test nouvelles possibilitées
-            retGO = checkIfGameOver(grille);
-            if(retGO.retcode == retCheckGO::RET_OK) {
-                hint = retGO.hint;
-            } else {
-                //Game over...
-                //TODO : faire un truc mieux
-                if(score >= 100) {
-                    std::cout << "Victoire !\n";
-                } else {
-                    std::cout << "Game over, score = " << score << std::endl;
-                }
-                exit(0);
-            }
         }
 
+        if(isMoving) {
+            if(animation->hasFinished()) {
+                isMoving = false;
+                delete animation;
+                grille = new Grille(*(ret.new_grille));
+                score = grille->get_score();
+
+                //test nouvelles possibilitées
+                retGO = checkIfGameOver(grille);
+                if(retGO.retcode == retCheckGO::RET_OK) {
+                    hint = retGO.hint;
+                } else {
+                    //Game over...
+                    //TODO : faire un truc mieux
+                    if(score >= 100) {
+                        std::cout << "Victoire !\n";
+                    } else {
+                        std::cout << "Game over, score = " << score << std::endl;
+                    }
+                    GameOver = true;
+                }
+                
+            } else {
+                animation->updatePosition(GetFrameTime());
+            }
+        }
 
         //après moveBlock : isCellSelected = false
 
@@ -199,31 +170,69 @@ int main() {
         //tracer la grille
         for(unsigned short i = 0; i<WIDTH_BLOCKS; i++) {
             for(unsigned short j = 0; j<HEIGHT_BLOCKS; j++) {
-                DrawRectangle(SIZE_BLOCK * i,OFFSET_SCORE + SIZE_BLOCK * j , SIZE_BLOCK, SIZE_BLOCK, getCouleur(grille->getCc(i,j)->couleur));
+                //if isMoving => animation->isMoving(i,j)... 
+                if(!isMoving || !animation->isMoving(coord(i,j))) DrawRectangle(SIZE_BLOCK * i,OFFSET_SCORE + SIZE_BLOCK * j , SIZE_BLOCK, SIZE_BLOCK, getCouleur(grille->getCc(i,j)->couleur));
             }
-        }
-
-        if(shouldDisplayHint) {
-            DrawRectangleLinesEx(rec_around_hint, 5, GRAY);
-        }
-
-        if(isCellSelected) {
-            DrawRectangleLinesEx(rec_around_cell, 5, BLACK);
         }
 
         DrawText("Score : ", 30, 20, 30, BLACK);
         DrawText(score_text.data(), 150, 20, 30, BLACK);
-        //Draw Hint Button
-        DrawRectangleRoundedLines(hintRectangle, 0.3, 4, 5, BLACK);
-        DrawText("Hint", 20, OFFSET_SCORE - SIZE_BLOCK - 5, 40, BLACK);
 
-        DrawRectangleRoundedLines(undoRectangle, 0.3, 4, 5, BLACK);
-        DrawText("Undo", W_WIDTH - 2*SIZE_BLOCK - 10, OFFSET_SCORE - SIZE_BLOCK - 5, 40, BLACK);
+        DrawRectangleRoundedLines(restartRectangle, 0.3, 4, 5, BLACK);
+        DrawText("Restart", W_WIDTH/2 - 65, OFFSET_SCORE/2 - SIZE_BLOCK/2 - 2, 30, BLACK);
+
+        if(isMoving) {
+            animation->drawCells();
+        }
+
+        if(!GameOver) {
+
+            if(shouldDisplayHint) {
+                DrawRectangleLinesEx(rec_around_hint, 5, GRAY);
+            }
+
+            if(isCellSelected) {
+                DrawRectangleLinesEx(rec_around_cell, 5, BLACK);
+            }
+
+            
+            //Draw Hint Button
+            DrawRectangleRoundedLines(hintRectangle, 0.3, 4, 5, BLACK);
+            DrawText("Hint", 20, OFFSET_SCORE - SIZE_BLOCK - 5, 40, BLACK);
+
+            DrawRectangleRoundedLines(undoRectangle, 0.3, 4, 5, BLACK);
+            DrawText("Undo", W_WIDTH - 2*SIZE_BLOCK - 10, OFFSET_SCORE - SIZE_BLOCK - 5, 40, BLACK);
+
+        } else {
+
+            DrawText("Game Over !", (W_WIDTH / 2) - 90, OFFSET_SCORE - SIZE_BLOCK, 30, BLACK);
+
+        }
 
         EndDrawing();
 
         //ici, on pourrait attendre qu'une touche soit pressée ?
 
     }
+
+    clean_history();
+
+    return restart;
+}
+
+int main() {
+    srand(time(NULL));
+
+    InitWindow(W_WIDTH, W_HEIGHT, "Niaki");
+
+    SetTargetFPS(60);
+
+    /* while(play_game()) {
+        std::cerr << "restart\n";
+    } */
+
+    while(play_game());
+    
+    CloseWindow();
     return 0;
 }

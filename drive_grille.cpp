@@ -8,6 +8,34 @@ auto select_random(const S &s, size_t n) {
   return it;
 }
 
+Color getCouleur(enum couleur couleur) {
+    if(couleur < 0 || couleur > NUMBER_COLOR) return RAYWHITE;
+
+    switch (couleur)
+    {
+    case COLOR_RED:
+        return RED;
+        break;
+    case COLOR_YELLOW:
+        return YELLOW;
+        
+    case COLOR_ORANGE:
+        return ORANGE;
+
+    case COLOR_PINK:
+        return VIOLET;
+
+    case COLOR_GREEN:
+        return GREEN;
+
+    case COLOR_BLUE:
+        return BLUE;
+    
+    default:
+        break;
+    }
+}
+
 Grille *gen_new_grille(unsigned short width, unsigned short height) {
     Grille *grille = new Grille(width, height);
 
@@ -69,4 +97,8 @@ struct retCheckGO checkIfGameOver(Grille *grille) {
 
 out:
     return res;
+}
+
+void drawCell(unsigned i, unsigned j, Grille *grille) {
+    DrawRectangle(SIZE_BLOCK * i,OFFSET_SCORE + SIZE_BLOCK * j , SIZE_BLOCK, SIZE_BLOCK, getCouleur(grille->getCc(i,j)->couleur));
 }

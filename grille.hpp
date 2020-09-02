@@ -7,6 +7,10 @@
 #include <iterator>
 #include <algorithm>
 
+#include "permutation.cpp"
+
+#include "raylib.h"
+
 #define DEFAULT_HEIGHT_GRID     8
 #define DEFAULT_WIDTH_GRID      6
 
@@ -113,5 +117,7 @@ struct retMoveBlock {
     //permet d'avoir la trace des déplacements effectués
     std::map<coord,coord> *deplacements;
 };
+
+std::pair<short, short> dir_to_delta(enum direction dir);
 
 void printGrid(Grille &grille);

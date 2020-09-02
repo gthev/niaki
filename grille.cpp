@@ -10,7 +10,7 @@ void display_elements(std::set<coord> &elem) {
     std::cout << std::endl;
 }
 
-coord dir_to_delta(enum direction dir) {
+std::pair<short, short> dir_to_delta(enum direction dir) {
     switch (dir)
     {
     case DIR_UP:
@@ -293,7 +293,7 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
 
     struct retMoveBlock ret;
 
-    ret.deplacements = new std::map<coord,coord>;
+    //ret.deplacements = new std::map<coord,coord>;
 
     //1ère étape : trouver les prochaines positions possibles
     //std::vector<coord> candidats;
@@ -307,6 +307,14 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
 
     current_cell.first += delta.first;
     current_cell.second += delta.second;
+
+    if(!is_in_grid(current_cell)) {
+        ret.rettype = retMoveBlock::RET_NOTHING;
+        ret.deplacements = nullptr;
+        ret.new_grille = nullptr;
+        return ret;
+    }
+
     struct cc *c_neighbour = getCc(current_cell.first, current_cell.second);
 
     //todo changer tout ça : on ne doit sauter qu'une CC !
@@ -370,7 +378,7 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
 
     //std::cout << "current_cell : " << current_cell.first << " " << current_cell.second << std::endl;
 
-    ret.deplacements->clear();
+    //ret.deplacements->clear();
 
     /* current_cell = candidats.back();
         candidats.pop_back();
@@ -400,6 +408,8 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
 
     std::set<coord> modified_cells;
 
+    Permutation<coord> permut_cases;
+
     coord cell;
     while (!todo_file->empty())
     {
@@ -423,14 +433,19 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
 
             grid_copy->swap_cells(cell, next_cell);
 
+            //TODO : pas bon, on devrait considérer des PERMUTATIONS ici
+            /* (*ret.deplacements)[cell] = next_cell;
+            (*ret.deplacements)[next_cell] = cell; */
+            permut_cases.applyTransposition(cell, next_cell);
+
             //display_elements(grid_copy->getCc(cell.first, cell.second)->elements);
             //display_elements(grid_copy->getCc(next_cell.first, next_cell.second)->elements);
 
             cell = next_cell;
         }
-
-        ret.deplacements->insert(std::pair<coord, coord>(cell_orig, cell));
     }
+
+    ret.deplacements = new std::map<coord,coord>(permut_cases.getFunction());
 
     //std::cout << "ok swap\n";
 
@@ -561,7 +576,7 @@ void printGrid(Grille &grille) {
 }
 
 unsigned short Grille::get_score() {
-    unsigned short score_max = m_height * m_width;
+    unsigned short score_max = m_height * m_width - NUMBER_COLOR;
 
     std::vector<unsigned short> comptes(NUMBER_COLOR);
     std::vector<unsigned short> nr_cc(NUMBER_COLOR);
