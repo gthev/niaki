@@ -67,6 +67,11 @@ bool play_game() {
                 if(!isHistoryEmpty()) {
                     //delete grille;
                     grille = depile_grille();
+                    retGO = checkIfGameOver(grille);
+                    //normalement, pas besoin, mais bon...
+                    if(retGO.retcode == retCheckGO::RET_OK) {
+                        hint = retGO.hint;
+                    }
                 }
             }
 
@@ -144,7 +149,7 @@ bool play_game() {
                     }
                     GameOver = true;
                 }
-                
+
             } else {
                 animation->updatePosition(GetFrameTime());
             }

@@ -301,19 +301,20 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
     coord current_cell(x,y);
     bool isOk = false;
     coord but;
-    struct cc *c_orig = getCc(x,y);
 
     coord delta = dir_to_delta(direction);
 
     current_cell.first += delta.first;
     current_cell.second += delta.second;
 
-    if(!is_in_grid(current_cell)) {
+    if(!is_in_grid(current_cell) || !is_in_grid(coord(x,y))) {
         ret.rettype = retMoveBlock::RET_NOTHING;
         ret.deplacements = nullptr;
         ret.new_grille = nullptr;
         return ret;
     }
+
+    struct cc *c_orig = getCc(x,y);
 
     struct cc *c_neighbour = getCc(current_cell.first, current_cell.second);
 
@@ -511,12 +512,16 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
                 //std::cout << "looking for " << x_voisin << " " << y_voisin << "...\n";
 
                 //si elle est à côté d'une case de la même couleur...
-                if (grid_copy->is_in_grid(voisin) && grid_copy->getCc(x, y)->couleur == grid_copy->getCc(x_voisin, y_voisin)->couleur)
+                if (grid_copy->is_in_grid(voisin))
                 {
+                    if(grid_copy->getCc(x,y) == nullptr || grid_copy->getCc(x_voisin, y_voisin) == nullptr) continue;
+                    if( grid_copy->getCc(x, y)->couleur == grid_copy->getCc(x_voisin, y_voisin)->couleur) {
 
-                    //std::cout << "reu trouvée ! " << x_voisin << " " << y_voisin << std::endl;
+                        //std::cout << "reu trouvée ! " << x_voisin << " " << y_voisin << std::endl;
 
-                    grid_copy->doUnion(grid_copy->getCc(x_voisin, y_voisin), grid_copy->getCc(x, y));
+                        grid_copy->doUnion(grid_copy->getCc(x_voisin, y_voisin), grid_copy->getCc(x, y));
+                
+                    }
                 }
 
                 //printGrid(*grid_copy); std::cout << std::endl;
