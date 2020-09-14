@@ -451,6 +451,13 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
     //std::cout << "ok swap\n";
 
     //on fait l'union des deux cc
+    if(grid_copy->getCc(current_cell.first, current_cell.second) == nullptr) {
+        ret.rettype = retMoveBlock::RET_NOTHING;
+        ret.deplacements = nullptr;
+        ret.new_grille = nullptr;
+        return ret;
+    }
+    
     struct cc *new_c = grid_copy->doUnion(c, grid_copy->getCc(current_cell.first, current_cell.second));
 
     //std::cout << "ok dounion\n";
