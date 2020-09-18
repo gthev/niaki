@@ -32,7 +32,7 @@ Color getCouleur(enum couleur couleur) {
         return BLUE;
     
     default:
-        break;
+        return BLUE;
     }
 }
 
