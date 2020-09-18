@@ -428,6 +428,16 @@ struct retMoveBlock Grille::moveBlock(unsigned short x, unsigned short y, enum d
         {
             coord next_cell = coord(cell.first + delta.first, cell.second + delta.second);
 
+            //le mouvement ferait dépasser des cases de la grille
+            if(!grid_copy->is_in_grid(next_cell)) {
+                delete grid_copy;
+                delete todo_file;
+                ret.rettype = retMoveBlock::RET_NOTHING;
+                ret.new_grille = nullptr;
+                ret.deplacements = nullptr;
+                return ret;
+            }
+
             modified_cells.insert(next_cell);
 
             //std::cout << "swaping (" << cell.first << "," << cell.second << ") and (" << next_cell.first << "," << next_cell.second << ")\n";
